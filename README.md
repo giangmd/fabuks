@@ -1,8 +1,6 @@
 # Endpoint mock
 Fabuks example awesome!!!
 
-Demo: http://fabuks.giangmd.net
-
 ## Required
 
  - Docker Desktop

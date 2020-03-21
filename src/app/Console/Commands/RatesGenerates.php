@@ -53,11 +53,10 @@ class RatesGenerates extends Command
             ];
 
             $currenies = config('settings.currenies');
-
+            $amount = 1/$arguments['turns_count'];
             $rates = $this->getExchangeRate($this->main_symbool, $currenies, $amount);
 
             foreach($currenies as $key => $value) {
-                $amount = 1/$arguments['turns_count'];
                 if ($value == $this->main_symbool) {
                     $rate = $amount;
                 } else {
@@ -77,7 +76,7 @@ class RatesGenerates extends Command
     protected function getExchangeRate($from, $to, $amount) {
         $amount = urlencode($amount);
         $from = urlencode($from);
-        $to = urlencode($to);
+        $to = urlencode(implode(',', $to));
         $url = "http://apilayer.net/api/live?access_key=5c784710c1c7de92cdb5ea41743aac4e&currencies=$to&source=$from&format=1";
         $json = json_decode(file_get_contents($url), true);
         if ($json['success']) {

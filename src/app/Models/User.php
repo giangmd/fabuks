@@ -42,7 +42,7 @@ class User extends Authenticatable
     {
         parent::boot();
         static::saved(function ($model) {
-            if ($model->role != 0 && count($model->balance) <= 0) {
+            if (count($model->balance) <= 0) {
                 $balanceData = [];
                 array_push($balanceData, [
                     'type' => config('settings.fabuk_symbool'),

@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', ['uses' => 'HomeController@index', 'as' => 'user.home']);
+Route::get('/home', ['uses' => 'HomeController@index']);
 
 Route::group(['middleware' => ['check_permisson:admin'], 'prefix' => 'fabuks', 'namespace' => 'Admin', 'as' => 'admin.'], function() {
 
