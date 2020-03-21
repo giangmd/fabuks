@@ -37,6 +37,11 @@ Demo: http://fabuks.giangmd.net
 
 Config API_CLIENT_SECRET and API_CLIENT_ID in .env
 
+**=> Build Front end Vuejs**
+- cd src
+- npm install
+- npm run dev
+
 **=> Copy your IP to env**
 
 `ifconfig`
