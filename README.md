@@ -56,7 +56,7 @@ Copy IP at `en0` to `APP_URL` in .env with `8080` port from `docker-compose.yml`
 
 If you need to check your PHPCS check code standard before to commit.
 ```
-cp src/git-hooks/pre-commit .git/hooks/pre-commit
+cp git-hooks/pre-commit .git/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
 ```
 
