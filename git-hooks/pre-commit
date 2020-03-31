@@ -42,14 +42,10 @@ if [[ "$?" == 1 ]]; then
   exit 1
 fi
 
-STAGED_JS_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep ".(js|vue)\{0,1\}$" | grep -v "node_modules")
-if [ ${#STAGED_JS_FILES} -lt 1 ]; then
-    echo -e "You have no staged .js or .vue files to test\n"
-    exit
-fi
+STAGED_JS_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep ".(js|vue)\{0,1\}$")
 for FILE in $STAGED_JS_FILES
 do
-  ./src/node_modules/.bin/eslint --ext .js,.vue "$FILE"
+  node_modules/.bin/eslint --ext .js,.vue "$FILE"
 
   if [[ "$?" == 0 ]]; then
     echo "\t\033[32mESLint Passed: $FILE\033[0m"
@@ -60,8 +56,6 @@ do
 done
 
 echo "\nJavascript validation completed!\n"
-
-PASS=false
 
 if ! $PASS; then
   echo "\033[41mCOMMIT FAILED:\033[0m Your commit contains files that should pass PHPCS and Eslint but do not. Please fix the PHPCS and Eslint errors and try again.\n"

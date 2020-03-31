@@ -34,21 +34,7 @@ class DashboardController extends Controller {
 		return view('admin.user-update', compact('user'));
 	}
 
-	public function userUpdate($id, Request $request)
-	{
-
-
-
-
-
-
-
-
-
-
-
-
-
+	public function userUpdate($id, Request $request) {
 		$user = $this->user->find($id);
 		if (empty($user)) {
 			return redirect()->back();

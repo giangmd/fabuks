@@ -8,7 +8,6 @@
                 <div class="col-6 text-right">
                     Refesh automatic each 5 seconds.
                 </div>
-            <div></div></div>
             </div>
         </div>
 
