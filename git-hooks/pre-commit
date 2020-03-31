@@ -35,27 +35,7 @@ echo "\nPHPCS validation completed!\n"
 
 echo "\nValidating Javascript:\n"
 
-# Check for eslint
-which ./src/eslint &> /dev/null
-if [[ "$?" == 1 ]]; then
-  echo "\t\033[41mPlease install ESlint\033[0m"
-  exit 1
-fi
 
-STAGED_JS_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep ".(js|vue)\{0,1\}$" | grep -v "node_modules")
-for FILE in $STAGED_JS_FILES
-do
-  eslint "$FILE"
-
-  if [[ "$?" == 0 ]]; then
-    echo "\t\033[32mESLint Passed: $FILE\033[0m"
-  else
-    echo "\t\033[41mESLint Failed: $FILE\033[0m"
-    PASS=false
-  fi
-done
-
-echo "\nJavascript validation completed!\n"
 
 PASS=false
 
