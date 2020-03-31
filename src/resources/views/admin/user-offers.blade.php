@@ -37,7 +37,7 @@
                 </thead>
 
                 <tbody>
-                    @foreach($user->trade_histories as $trade)
+                    @foreach($user->tradeHistory as $trade)
                     <tr>
                         <td class="center">{{ $loop->index + 1 }}</td>
                         <td>{{ $trade->from }}</td>

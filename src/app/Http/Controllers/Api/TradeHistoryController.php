@@ -1,136 +1,165 @@
 <?php
-
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use App\Http\Controllers\Api\ApiController;
-use Illuminate\Http\Request;
+use \App\Http\Controllers\Controller;
+use \App\Http\Controllers\Api\ApiController;
+use \Illuminate\Http\Request;
+use \App\Models\TradeHistory;
+use \App\Models\UserBalance;
+use \Illuminate\Support\Facades\Auth;
 
-use App\Models\TradeHistory;
-use App\Models\UserBalance;
+class TradeHistoryController extends ApiController {
+	protected $model;
+	protected $user_balance;
+	protected $user;
 
-use Auth;
+	public function __construct(TradeHistory $model, UserBalance $user_balance) {
+		$this->model = $model;
+		$this->user_balance = $user_balance;
+	}
 
-class TradeHistoryController extends ApiController
-{
-    protected $model;
-    protected $user_balance;
-    protected $user;
+	/**
+	 * Display a listing of the resource.
+	 *
+	 * @return \Illuminate\Http\Response
+	 */
+	public function index(Request $request) {
+		$this->user = Auth::user();
+		$userId = $this->user->id;
+		$trade = $this->model->where('user_id', $userId)
+			->orderBy('created_at', 'DESC')
+			->paginate(config('settings.limit'));
 
-    public function __construct(TradeHistory $model, UserBalance $user_balance) {
-        $this->model = $model;
-        $this->user_balance = $user_balance;
-    }
+		$acceptNew = false;
+		$tradePendding = $this->model->where('user_id', $userId)
+			->where('status', 0)
+			->count();
 
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index(Request $request)
-    {
-        $this->user = Auth::user();
-        $userId = $this->user->id;
-        $trade = $this->model->where('user_id', $userId)->orderBy('created_at', 'DESC')->paginate(config('settings.limit'));
+		if ($tradePendding < 5) {
+			$acceptNew = true;
+		}
 
-        $acceptNew = false;
-        $tradePendding = $this->model->where('user_id', $userId)->where('status', 0)->count();
-        if ($tradePendding < 5) {
-            $acceptNew = true;
-        }
+		return $this->jsonRender([
+			'trade' => $trade,
+			'accept_new' => $acceptNew,
+			'user_balance' => $this->user->balance
+		]);
+	}
 
-        return $this->jsonRender(['trade' => $trade, 'accept_new' => $acceptNew, 'user_balance' => $this->user->balance]);
-    }
+	public function offer(Request $request) {
+		$this->user = Auth::user();
+		$userId = $this->user->id;
+		$params = $request->all();
+		$params['user_id'] = $userId;
+		$params['status'] = 0;
 
-    public function offer(Request $request)
-    {
-        $this->user = Auth::user();
-        $userId = $this->user->id;
-        $params = $request->all();
-        $params['user_id'] = $userId;
-        $params['status'] = 0;
+		// check balance from currency exchange
+		$fromCurrency = $this->user_balance->where('user_id', $userId)
+			->where('type', $params['from'])
+			->first();
 
-        // check balance from currency exchange
-        $fromCurrency = $this->user_balance->where('user_id', $userId)->where('type', $params['from'])->first();
+		if ($fromCurrency->balance < $params['amount']) {
+			return $this->jsonRender([
+				'alert' => 'The Balance of '.$params['from'].' is not enough for exchange'
+			]);
+		}
 
-        if ($fromCurrency->balance < $params['amount']) {
-            return $this->jsonRender(['alert' => 'The Balance of '.$params['from'].' is not enough for exchange']);
-        }
+		// decrease from currency
+		$fromCurrency->balance = $fromCurrency->balance - $params['amount'];
+		$fromCurrency->save();
 
-        // decrease from currency
-        $fromCurrency->balance = $fromCurrency->balance - $params['amount'];
-        $fromCurrency->save();
+		// increase to currency
+		$toCurrency = $this->user_balance->where('user_id', $userId)
+			->where('type', $params['to'])
+			->first();
+		$toCurrency->balance = $toCurrency->balance + $params['amount'];
+		$toCurrency->save();
 
-        // increase to currency
-        $toCurrency = $this->user_balance->where('user_id', $userId)->where('type', $params['to'])->first();
-        $toCurrency->balance = $toCurrency->balance + $params['amount'];
-        $toCurrency->save();
+		// create trade history
+		$trade = $this->model->create($params);
 
-        // create trade history
-        $trade = $this->model->create($params);
+		$acceptNew = false;
+		$tradePendding = $this->model->where('user_id', $userId)
+			->where('status', 0)
+			->count();
 
-        $acceptNew = false;
-        $tradePendding = $this->model->where('user_id', $userId)->where('status', 0)->count();
-        if ($tradePendding < 5) {
-            $acceptNew = true;
-        }
+		if ($tradePendding < 5) {
+			$acceptNew = true;
+		}
 
-        return $this->jsonRender(['trade' => $trade, 'accept_new' => $acceptNew, 'user_balance' => $this->user->balance]);
-    }
+		return $this->jsonRender([
+			'trade' => $trade,
+			'accept_new' => $acceptNew,
+			'user_balance' => $this->user->balance
+		]);
+	}
 
-    public function refetch(Request $request)
-    {
-        $this->user = Auth::user();
-        $userId = $this->user->id;
-        $dataRate = $request->data_rate;
+	public function refetch(Request $request) {
+		$this->user = Auth::user();
+		$userId = $this->user->id;
+		$dataRate = $request->data_rate;
 
-        $this->resolveTrade($userId, $dataRate);
+		$this->resolveTrade($userId, $dataRate);
 
-        $acceptNew = false;
-        $tradePendding = $this->model->where('user_id', $userId)->where('status', 0)->count();
-        if ($tradePendding < 5) {
-            $acceptNew = true;
-        }
+		$acceptNew = false;
+		$tradePendding = $this->model->where('user_id', $userId)
+			->where('status', 0)
+			->count();
 
-        // refetch list trade
-        $trade = $this->model->where('user_id', $userId)->orderBy('created_at', 'DESC')->paginate(config('settings.limit'));
+		if ($tradePendding < 5) {
+			$acceptNew = true;
+		}
 
-        return $this->jsonRender(['trade' => $trade, 'accept_new' => $acceptNew, 'user_balance' => $this->user->balance]);
-    }
+		// refetch list trade
+		$trade = $this->model->where('user_id', $userId)
+			->orderBy('created_at', 'DESC')
+			->paginate(config('settings.limit'));
 
-    protected function resolveTrade($userId, $dataRate)
-    {
-        $date = new \DateTime();
-        $date->modify('-5 minutes');
-        $formatted_date = $date->format('Y-m-d H:i:s');
+		return $this->jsonRender([
+			'trade' => $trade,
+			'accept_new' => $acceptNew,
+			'user_balance' => $this->user->balance
+		]);
+	}
 
-        $records = $this->model->where('user_id', $userId)->where('status', 0)->where('created_at', '<=', $formatted_date)->get();
-        if (count($records) > 0) {
-            foreach ($records as $key => $record) {
-                $money = $record->amount * $record->price_order;
+	protected function resolveTrade($userId, $dataRate) {
+		$date = new \DateTime();
+		$date->modify('-5 minutes');
+		$formatted_date = $date->format('Y-m-d H:i:s');
 
-                // update trade offer
-                $priceDone = null;
-                if ($record->from == config('settings.fabuk_symbool')) {
-                    $priceDone = $dataRate[$record->to];
-                } elseif ($record->to == config('settings.fabuk_symbool')) {
-                    $priceDone = $dataRate[$record->from];
-                }
+		$records = $this->model->where('user_id', $userId)
+			->where('status', 0)
+			->where('created_at', '<=', $formatted_date)
+			->get();
 
-                $record->status = 1;
-                $record->price_done = $priceDone;
-                $record->save();
+		if (count($records) > 0) {
+			foreach ($records as $key => $record) {
+				$money = $record->amount * $record->price_order;
 
-                // update balance for user
-                $this->updateBalance($userId, $money);
-            }
-        }
-    }
+				// update trade offer
+				$priceDone = null;
+				if ($record->from == config('settings.fabuk_symbool')) {
+					$priceDone = $dataRate[$record->to];
+				} elseif ($record->to == config('settings.fabuk_symbool')) {
+					$priceDone = $dataRate[$record->from];
+				}
 
-    protected function updateBalance($userId, $money=0)
-    {
-        $total = $this->user_balance->where('user_id', $userId)->where('type', 'total')->first();
-        $total->balance = $total->balance + $money;
-        $total->save();
-    }
+				$record->status = 1;
+				$record->price_done = $priceDone;
+				$record->save();
+
+				// update balance for user
+				$this->updateBalance($userId, $money);
+			}
+		}
+	}
+
+	protected function updateBalance($userId, $money = 0) {
+		$total = $this->user_balance->where('user_id', $userId)
+			->where('type', 'total')
+			->first();
+
+		$total->balance = $total->balance + $money;
+		$total->save();
+	}
 }

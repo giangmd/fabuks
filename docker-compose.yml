@@ -28,6 +28,7 @@ services:
     volumes:
       - ./src:/var/www
       - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
+      #- ./docker/nginx/htpasswd:/etc/nginx/.htpasswd
     networks:
       - fabuks-network
 

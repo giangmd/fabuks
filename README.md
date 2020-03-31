@@ -52,6 +52,14 @@ Copy IP at `en0` to `APP_URL` in .env with `8080` port from `docker-compose.yml`
 
 `docker exec fabuks_app php artisan rates:generates 1.25`
 
+**Config git hook pre-commit (not required)**
+
+If you need to check your PHPCS check code standard before to commit.
+```
+cp src/git-hooks/pre-commit .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
+
 ## Result
 
 - WEB: `localhost:8080`
