@@ -8,6 +8,7 @@
                 <div class="col-6 text-right">
                     Refesh automatic each 5 seconds.
                 </div>
+            <div></div></div>
             </div>
         </div>
 
@@ -17,8 +18,6 @@
                     :chart-data="datacollection"
                     :options="options"
                 />
-            <div>test test</div>
-            <div>test test</div>
             </div>
         </div>
     </div>
